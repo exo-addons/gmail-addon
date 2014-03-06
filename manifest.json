@@ -1,0 +1,21 @@
+{
+  "name": "POCGmail",
+  "description": "Show eXo information while using Gmail",
+  "version": "2",
+  "manifest_version": 2,
+  "background" : {
+    "scripts": ["background.js"]
+  },
+  "permissions": [
+    "webRequest",
+    "*://mail.google.com/*",
+    "*://int.exoplatform.org/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["*://mail.google.com/*"],
+      "js": ["jquery.min.js", "contentscript.js"],
+      "run_at": "document_end"
+    }
+  ]
+}
