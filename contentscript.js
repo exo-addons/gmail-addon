@@ -18,7 +18,7 @@ chrome.extension.onMessage.addListener(function (message, sender, sendResponse) 
 Bind mouse hover event to email labels to display eXo information.
 */
 function bindEventToGmail() {
-  // Check if opening an email then hide ad right panel.
+  // Check if there is opening email then hide ad right panel.
   var currentRightPanel = $('.Bu.y3')[0];
   if (!currentRightPanel) {
     return;
