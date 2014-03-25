@@ -1,14 +1,14 @@
 var EXO_DEFAULT_HOST_NAME = "int.exoplatform.org";
-var xhr;
+var PEOPLE_RET = "/rest/private/social/people/getPeopleInfo/{userId}.json";
 
 /*
  * Update event binding after each http request.
  */
 chrome.extension.onMessage.addListener(function (message, sender, sendResponse) {
   switch (message.type) {
-    case "bindEvent":
-      bindEventToGmail();
-      break;
+  case "bindEvent":
+    bindEventToGmail();
+    break;
   }
 });
 
@@ -20,8 +20,6 @@ function bindEventToGmail() {
   var currentRightPanel = $('.Bu.y3')[0];
   if (!currentRightPanel) {
     return;
-  } else {
-    //$(currentRightPanel).hide();
   }
 
   // Show eXo customized right panel
@@ -31,65 +29,72 @@ function bindEventToGmail() {
   }
 
   /** Show eXo information when hover over eXo email (eg: dongpd@exoplatform) **/
-  chrome.storage.local.get("exo_host", function (fetchedData) {   // Get exo host config
+  chrome.storage.local.get("exo_host", function (fetchedData) { // Get exo host config
     var hostValue = fetchedData.exo_host;
     if (!hostValue) {
       hostValue = EXO_DEFAULT_HOST_NAME;
     }
-    $("span[email]").unbind('mouseenter').unbind('mouseleave').hover(function () {
-        bindEmailMouseOverEvent($(this), hostValue); // Bind event
-      },
-      function () {
-        $(this).removeClass('active');
-        if ($('#rightPanel').hasClass('Loading')) {
-          $('#rightPanel').text('');
-          $('#rightPanel').removeClass('Loading');
-        }
-        if (xhr) xhr.abort();
-      });
+
+    bindEmailMouseOverEvent(hostValue); // Bind event
   });
 }
 
 /*
  * Bind mouse hover event to email label
  */
-function bindEmailMouseOverEvent(elm, eXoHostName) {
-  var obj = $(elm);
+function bindEmailMouseOverEvent(eXoHostName) {
+  var xhr;
+  $("span[email]").unbind('mouseenter').unbind('mouseleave').hover(function () {
+    var obj = $(this);
 
-  // Get eXo userId
-  var email = obj.attr("email");
-  var userId = email.substring(0, email.indexOf('@'));
+    // Get eXo userId
+    var email = obj.attr("email");
+    var userId = email.substring(0, email.indexOf('@'));
 
-  if ($('#rightPanel').text().indexOf(userId) != -1) return;
+    if ($('#rightPanel').text().indexOf(userId) != -1) return;
 
-  // Get eXo user information by RESTful Service and show on customized right panel.
-  var url = "http://" + eXoHostName + "/rest/social/people/getPeopleInfo/" + userId + ".json";
+    // Get eXo user information by RESTful Service and show on customized right panel.
+    var url = "http://" + eXoHostName + PEOPLE_RET;
+    url = url.replace('{userId}', userId);
 
-  obj.addClass('active');
-  setTimeout(function () { // Only process hover handler if mouse over email 2 seconds. This avoid crazy mouse moving
-    if (obj.hasClass('active')) {
-      // Mark loading data
-      $('#rightPanel').addClass("Loading").text("Loading eXo User information...");
+    obj.addClass('active');
+    setTimeout(function () { // Only process hover handler if mouse over email 2 seconds. This avoid crazy mouse moving
+      if (obj.hasClass('active')) {
+        // Mark loading data
+        $('#rightPanel').show().addClass("Loading").html("<div style='width:200px;color: #333;border: 1PX SOLID #D8D8D8; margin: 10PX 0 4PX 0; padding: 4px 6px 8px 10px; background: rgba(0, 0, 0, 0.06);'>Loading eXo User information...</div>");
 
-      xhr = 
-        $.ajax({
-        url: url,
-        dataType: "text"
-      }).done(function (data) {
-        if (obj.hasClass('active')) {
-          var member = $.parseJSON(data);
-          $('#rightPanel').removeClass('Loading');
-          $('#rightPanel').html("<table><tr><td align='left'><span>eXo user information</span>" + "</br></br></td></tr>" + "<tr><td>Email:" + email + "</br></td></tr>" + "<tr><td>Full Name:" + checkNullInfo(member.fullName) + "</br></td></tr>" + "<tr><td>Position:" + checkNullInfo(member.position) + "</br></td></tr>" + "<tr><td>Activity Title: " + checkNullInfo(member.activityTitle) + "</br></td></tr>" + "<tr><td><img style='width: 200px; height: 200px' src='http://" + eXoHostName + member.avatarURL + "'></td></tr>");
-        }
-      }).fail(function () {
-        //$('#rightPanel').text("Can not get information");
-      });
+        xhr =
+          $.ajax({
+            url: url,
+            dataType: "text"
+          }).done(function (data) {
+            if (obj.hasClass('active')) {
+              var member = $.parseJSON(data);
+              $('#rightPanel').removeClass('Loading');
+              $('#rightPanel').html("<table style='border: 1PX SOLID #D8D8D8; margin: 10PX 0 4PX 0; padding: 4px 6px 8px 10px; background: rgba(0, 0, 0, 0.06);'><tr><td align='left' style='padding: 0 0 0 4px;'><span style='color: #333; float:left; font-size: 15px;' >eXo user information</span>" + "<a onclick='document.getElementById(\"rightPanel\").style.display=\"none\";' style='float: right; color: #999; cursor: pointer;'>x</a></br></br></td></tr>" + "<tr><td><div style='float:left; width: 80px; color: #333;'>Email:</div><div style='float: left; width: 122px; word-wrap: break-word; '>" + email + "</div></br></td></tr>" + "<tr><td><div style='float:left; width: 80px; color: #333;'>Full Name:</div><div style='float: left; width: 122px; word-wrap: break-word;'>" + checkNullInfo(member.fullName) + "</div></br></td></tr>" + "<tr><td><div style='float:left; width: 80px; color: #333;'>Position:</div><div style='float: left; width: 122px; word-wrap: break-word;'>" + checkNullInfo(member.position) + "</div></br></td></tr>" + "<tr><td><div style='float:left; width: 80px; color: #333;'>Activity Title: </div><div style='float: left; width: 122px; word-wrap: break-word;'>" + checkNullInfo(member.activityTitle) + "</div></br></td></tr>" + "<tr><td style='padding: 8px 0 0 ;'><img style='width: 200px; height: 200px' src='http://" + eXoHostName + member.avatarURL + "'></td></tr>");
+            }
+          }).fail(function () {
+            //$('#rightPanel').text("Can not get information");
+          });
+      }
+    }, 1500);
+  },
+  function () {
+    $(this).removeClass('active');
+    if ($('#rightPanel').hasClass('Loading')) {
+      $('#rightPanel').text('');
+      $('#rightPanel').removeClass('Loading');
+      $('#rightPanel').hide();
     }
-  }, 1500);
+    if (xhr) {
+      xhr.abort();
+      xhr = null;
+    }
+  });
 }
 
 /*
- * Check 
+ * Check
  */
 function checkNullInfo(value) {
   if (!value) {
@@ -102,7 +107,7 @@ function checkNullInfo(value) {
  * Create customized right panel.
  */
 function createRightPanel() {
-  var rightPanel = '<td  class="Bu"><div id ="rightPanel" style="top: 47px; right: 30px; width: 220px; height: 350px; position: absolute; background-color:white;">';
+  var rightPanel = '<td  class="Bu"><div id ="rightPanel" style="z-index:10; display:none; top: 47px; right: 30px; width: 240px; height: 350px; position: absolute; background-color:white;">';
   rightPanel += '</div></td>';
   return rightPanel;
 }
