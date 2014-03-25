@@ -1,29 +1,27 @@
-var eXoHostName = "http://int.exoplatform.org";
+var EXO_DEFAULT_HOST_NAME = "int.exoplatform.org";
+var xhr;
 
 /*
-Update event binding after each http request.
-*/
+ * Update event binding after each http request.
+ */
 chrome.extension.onMessage.addListener(function (message, sender, sendResponse) {
   switch (message.type) {
-  case "eXoUserInfo":
-    bindEventToGmail();
-    break;
-  case "rightPanel":
-    bindEventToGmail();
-    break;
+    case "bindEvent":
+      bindEventToGmail();
+      break;
   }
 });
 
 /*
-Bind mouse hover event to email labels to display eXo information.
-*/
+ * Bind mouse hover event to email labels to display eXo information.
+ */
 function bindEventToGmail() {
   // Check if there is opening email then hide ad right panel.
   var currentRightPanel = $('.Bu.y3')[0];
   if (!currentRightPanel) {
     return;
   } else {
-    $(currentRightPanel).hide();
+    //$(currentRightPanel).hide();
   }
 
   // Show eXo customized right panel
@@ -32,51 +30,67 @@ function bindEventToGmail() {
     $(currentRightPanel).parent().children().last().after(rightPanel);
   }
 
-  // Show eXo information when hover over eXo email (eg: dongpd@exoplatform)
-  bindEmailMouseOverEvent();
+  /** Show eXo information when hover over eXo email (eg: dongpd@exoplatform) **/
+  chrome.storage.local.get("exo_host", function (fetchedData) {   // Get exo host config
+    var hostValue = fetchedData.exo_host;
+    if (!hostValue) {
+      hostValue = EXO_DEFAULT_HOST_NAME;
+    }
+    $("span[email]").unbind('mouseenter').unbind('mouseleave').hover(function () {
+        bindEmailMouseOverEvent($(this), hostValue); // Bind event
+      },
+      function () {
+        $(this).removeClass('active');
+        if ($('#rightPanel').hasClass('Loading')) {
+          $('#rightPanel').text('');
+          $('#rightPanel').removeClass('Loading');
+        }
+        if (xhr) xhr.abort();
+      });
+  });
 }
 
 /*
-Bind mouse hover event to email label
-*/
-function bindEmailMouseOverEvent() {
-  $("span[email]").hover(function () {
-      var obj = $(this);
-      $('#rightPanel').text("Loading eXo User information...");
+ * Bind mouse hover event to email label
+ */
+function bindEmailMouseOverEvent(elm, eXoHostName) {
+  var obj = $(elm);
 
-      // Get eXo userId
-      var email = $(this).attr("email");
-      var userid = email.substring(0, email.indexOf('@'));
+  // Get eXo userId
+  var email = obj.attr("email");
+  var userId = email.substring(0, email.indexOf('@'));
 
-      // Get eXo user information by RESTful Service and show on customized right panel.
-      var url = eXoHostName + "/rest/social/people/getPeopleInfo/" + userid + ".json";
-      
-      obj.addClass('active');
-      setTimeout(function () { // Only process hover handler if mouse over email 2 seconds. This avoid crazy mouse moving
+  if ($('#rightPanel').text().indexOf(userId) != -1) return;
+
+  // Get eXo user information by RESTful Service and show on customized right panel.
+  var url = "http://" + eXoHostName + "/rest/social/people/getPeopleInfo/" + userId + ".json";
+
+  obj.addClass('active');
+  setTimeout(function () { // Only process hover handler if mouse over email 2 seconds. This avoid crazy mouse moving
+    if (obj.hasClass('active')) {
+      // Mark loading data
+      $('#rightPanel').addClass("Loading").text("Loading eXo User information...");
+
+      xhr = 
+        $.ajax({
+        url: url,
+        dataType: "text"
+      }).done(function (data) {
         if (obj.hasClass('active')) {
-          $.ajax({
-            url: url,
-            dataType: "text"
-          }).done(function (data) {
-            var member = $.parseJSON(data);
-            $('#rightPanel').html("<table><tr><td align='left'><span>eXo user information</span>" + "</br></br></td></tr>" 
-                                       + "<tr><td>Email:" + email + "</br></td></tr>" 
-                                       + "<tr><td>Full Name:" + checkNullInfo(member.fullName) + "</br></td></tr>"
-                                       + "<tr><td>Position:" + checkNullInfo(member.position) + "</br></td></tr>"
-                                       + "<tr><td>Activity Title: " + checkNullInfo(member.activityTitle) + "</br></td></tr>" 
-                                       + "<tr><td><img src='" + eXoHostName + member.avatarURL + "'></td></tr>");
-          }).fail(function () {
-            $('#rightPanel').text("Can not get information");
-          });
+          var member = $.parseJSON(data);
+          $('#rightPanel').removeClass('Loading');
+          $('#rightPanel').html("<table><tr><td align='left'><span>eXo user information</span>" + "</br></br></td></tr>" + "<tr><td>Email:" + email + "</br></td></tr>" + "<tr><td>Full Name:" + checkNullInfo(member.fullName) + "</br></td></tr>" + "<tr><td>Position:" + checkNullInfo(member.position) + "</br></td></tr>" + "<tr><td>Activity Title: " + checkNullInfo(member.activityTitle) + "</br></td></tr>" + "<tr><td><img style='width: 200px; height: 200px' src='http://" + eXoHostName + member.avatarURL + "'></td></tr>");
         }
-      }, 2000);
-    },
-    function () {
-      $(this).removeClass('active');
-      $('#rightPanel').text("");
-    });
+      }).fail(function () {
+        //$('#rightPanel').text("Can not get information");
+      });
+    }
+  }, 1500);
 }
 
+/*
+ * Check 
+ */
 function checkNullInfo(value) {
   if (!value) {
     return "No Information";
@@ -85,10 +99,10 @@ function checkNullInfo(value) {
 }
 
 /*
-Create customized right panel.
-*/
+ * Create customized right panel.
+ */
 function createRightPanel() {
-  var rightPanel = '<td  class="Bu"><div id ="rightPanel" style="width:200px;">';
+  var rightPanel = '<td  class="Bu"><div id ="rightPanel" style="top: 47px; right: 30px; width: 220px; height: 350px; position: absolute; background-color:white;">';
   rightPanel += '</div></td>';
   return rightPanel;
 }

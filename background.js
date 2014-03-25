@@ -1,7 +1,7 @@
 chrome.webRequest.onCompleted.addListener(function (details) {
   chrome.tabs.getSelected(null, function (tab) {
     chrome.tabs.sendMessage(tab.id, {
-      type: "eXoUserInfo"
+      type: "bindEvent"
     });
   });
 }, {
@@ -11,7 +11,7 @@ chrome.webRequest.onCompleted.addListener(function (details) {
 chrome.webRequest.onBeforeRequest.addListener(function (details) {
   chrome.tabs.getSelected(null, function (tab) {
     chrome.tabs.sendMessage(tab.id, {
-      type: "rightPanel"
+      type: "bindEvent"
     });
   });
 }, {

@@ -8,14 +8,16 @@
   },
   "permissions": [
     "webRequest",
-    "*://mail.google.com/*",
-    "*://int.exoplatform.org/*"
+    "http://*/", "https://*/",
+    "storage"
   ],
   "content_scripts": [
     {
       "matches": ["*://mail.google.com/*"],
       "js": ["jquery.min.js", "contentscript.js"],
-      "run_at": "document_end"
+      "run_at": "document_end",
+      "all_frames" : false
     }
-  ]
+  ],
+  "options_page": "options.html"
 }
