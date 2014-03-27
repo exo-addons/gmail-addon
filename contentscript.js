@@ -1,5 +1,6 @@
 var EXO_DEFAULT_HOST_NAME = "int.exoplatform.org";
 var PEOPLE_RET = "/rest/private/social/people/getPeopleInfo/{userId}.json";
+var POST_ACTIVITY_RET = "/rest/private/api/social/v1-alpha3/portal/activity.json";
 
 /*
  * Update event binding after each http request.
@@ -35,7 +36,9 @@ function bindEventToGmail() {
       hostValue = EXO_DEFAULT_HOST_NAME;
     }
 
-    bindEmailMouseOverEvent(hostValue); // Bind event
+    bindEmailMouseOverEvent(hostValue);
+
+    bindPostActivity(hostValue);
   });
 }
 
@@ -71,7 +74,13 @@ function bindEmailMouseOverEvent(eXoHostName) {
             if (obj.hasClass('active')) {
               var member = $.parseJSON(data);
               $('#rightPanel').removeClass('Loading');
-              $('#rightPanel').html("<table style='border: 1PX SOLID #D8D8D8; margin: 10PX 0 4PX 0; padding: 4px 6px 8px 10px; background: rgba(0, 0, 0, 0.06);'><tr><td align='left' style='padding: 0 0 0 4px;'><span style='color: #333; float:left; font-size: 15px;' >eXo user information</span>" + "<a onclick='document.getElementById(\"rightPanel\").style.display=\"none\";' style='float: right; color: #999; cursor: pointer;'>x</a></br></br></td></tr>" + "<tr><td><div style='float:left; width: 80px; color: #333;'>Email:</div><div style='float: left; width: 122px; word-wrap: break-word; '>" + email + "</div></br></td></tr>" + "<tr><td><div style='float:left; width: 80px; color: #333;'>Full Name:</div><div style='float: left; width: 122px; word-wrap: break-word;'>" + checkNullInfo(member.fullName) + "</div></br></td></tr>" + "<tr><td><div style='float:left; width: 80px; color: #333;'>Position:</div><div style='float: left; width: 122px; word-wrap: break-word;'>" + checkNullInfo(member.position) + "</div></br></td></tr>" + "<tr><td><div style='float:left; width: 80px; color: #333;'>Activity Title: </div><div style='float: left; width: 122px; word-wrap: break-word;'>" + checkNullInfo(member.activityTitle) + "</div></br></td></tr>" + "<tr><td style='padding: 8px 0 0 ;'><img style='width: 200px; height: 200px' src='http://" + eXoHostName + member.avatarURL + "'></td></tr>");
+              $('#rightPanel').html("<table style='border: 1PX SOLID #D8D8D8; margin: 10PX 0 4PX 0; padding: 4px 6px 8px 10px; background: rgba(0, 0, 0, 0.06);'><tr><td align='center' style='padding-bottom:5px;'><a onclick='document.getElementById(\"rightPanel\").style.display=\"none\";' style='float: right; color: #999; cursor: pointer;'>x</a><style width='div:180px;font-size: 14px;overflow: hidden;text-overflow: ellipsis;' title='" + email + "'>" + email + "</div>" + "</br></td></tr>" 
+                                    + "<tr><td><div style='float:left; width: 80px; color: #333;'>Full Name:</div><div style='float: left; width: 122px; word-wrap: break-word;'>" + checkNullInfo(member.fullName) + "</div></br></td></tr>" 
+                                    + "<tr><td><div style='float:left; width: 80px; color: #333;'>Position:</div><div style='float: left; width: 122px; word-wrap: break-word;'>" + checkNullInfo(member.position) + "</div></br></td></tr>"
+                                    + "<tr><td><div style='float:left; width: 80px; color: #333;'>Activity Title: </div><div style='float: left; width: 122px; word-wrap: break-word;'>" + checkNullInfo(member.activityTitle) + "</div></br></td></tr>"
+                                    + "<tr><td style='padding: 8px 0 0 ;'><img style='width: 200px; height: 200px' src='http://" + eXoHostName + member.avatarURL + "'></td></tr>");
+              $('#rightPanel').append("<table style='border: 1PX SOLID #D8D8D8; margin: 10PX 0 4PX 0; padding: 4px 6px 8px 10px; background: rgba(0, 0, 0, 0.06);'><tr><td><div style='float:left; width: 202px; color: #333;'>Post something to activity stream</div></td></tr>"
+                                      + "<tr><td><div ><input id='postActivityId' style='width: 200px' type='text'></div></td></tr></table>");
             }
           }).fail(function () {
             //$('#rightPanel').text("Can not get information");
@@ -89,6 +98,41 @@ function bindEmailMouseOverEvent(eXoHostName) {
     if (xhr) {
       xhr.abort();
       xhr = null;
+    }
+  });
+}
+
+function bindPostActivity(eXoHostName) {
+  $("#postActivityId").unbind('keypress').keypress(function (event) {
+    if (event.which == 13) {
+      event.preventDefault();
+
+      // Get activity Title
+      var activity = new Object();
+      activity.title = $('#postActivityId').val();
+
+      // Make post activity RET
+      var url = "http://" + eXoHostName + POST_ACTIVITY_RET;
+      $.ajax({
+        url: url,
+        type: 'POST',
+        dataType: 'json',
+        data: JSON.stringify(activity),
+        contentType: 'application/json',
+        mimeType: 'application/json',
+
+        success: function (data) {
+          var parent = $('#postActivityId').parent();
+          var inputActivityHtml = parent.html();
+          parent.html(' Activity was posted successfully');
+            setTimeout(function () {
+              parent.html(inputActivityHtml);
+            }, 3000);
+        },
+        error: function (data, status, er) {
+          alert("error: " + data + " status: " + status + " er:" + er);
+        }
+      });
     }
   });
 }
